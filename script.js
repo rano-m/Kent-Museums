@@ -187,15 +187,21 @@ initializeApp();
 function showWelcomeModal() {
     const welcomeModal = document.getElementById('welcomeModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
   
     // Display the modal
     welcomeModal.style.display = 'flex';
   
+    // Hide the sidebar toggle button when modal is open
+    sidebarToggle.style.display = 'none';
+  
     // Close the modal when "Get Started" button is clicked
     closeModalBtn.addEventListener('click', () => {
       welcomeModal.style.display = 'none';
+      sidebarToggle.style.display = 'block'; // Show the sidebar toggle button again
     });
   }
+  
   
   // Show the welcome modal when the page loads
   window.addEventListener('load', showWelcomeModal);
@@ -226,3 +232,23 @@ startRouteButton.addEventListener('click', openInGoogleMaps);
 
 // Append the button to the sidebar, above the Visit Sequence container
 document.getElementById('sidebar').insertBefore(startRouteButton, visitSequenceContainer);
+
+
+// Sidebar for Mobile View
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.createElement('button');
+sidebarToggle.innerText = '☰';
+sidebarToggle.classList.add('sidebar-toggle');
+
+// Append the toggle button to the body (or map container)
+document.body.appendChild(sidebarToggle);
+
+// Toggle sidebar visibility on mobile
+sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    console.log("Sidebar toggle clicked. Open class:", sidebar.classList.contains('open'));
+  
+    // Toggle button icon
+    sidebarToggle.innerHTML = sidebar.classList.contains('open') ? '✖' : '☰';
+  });
+  
