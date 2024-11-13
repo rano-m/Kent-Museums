@@ -10,15 +10,6 @@
       "website": "http://www.masseyaero.org"
     },
     {
-      "name": "Kent Museum",
-      "lat": 39.35226773843539,
-      "lng": -75.98555066932533,
-      "address": "Turner Creek Park, 13689 Turners Creek Rd, Kennedyville, MD 21645",
-      "hours": "1st and 3rd Saturdays, May-October, 10am-2pm",
-      "contact_email": "thendrickson51@yahoo.com",
-      "website": ""
-    },
-    {
       "name": "Betterton Heritage Museum",
       "lat": 39.36922073244553,
       "lng": -76.06261362178417,
@@ -26,14 +17,6 @@
       "hours": "Saturdays and Sundays May-September 1:30pm-3:00pm or by appointment",
       "contact_phone": "410-348-5120",
       "website": "http://www.bettertonheritage.org"
-    },
-    {
-      "name": "African American Schoolhouse",
-      "lat": 39.300225498946894,
-      "lng": -76.14655207549062,
-      "address": "11730 St. James Newtown Rd., Worton, MD 21678",
-      "hours": "1st Saturdays May-September 10:00am-2:00pm, or by appointment",
-      "contact_email": "museumsofkent@gmail.com"
     },
     {
       "name": "Bordley History Center Historical Society of Kent County",
@@ -81,6 +64,24 @@
       "hours": "Saturdays from 9 am to 12 pm, and First Fridays",
       "contact_email": "lchamberlin2@washcoll.edu",
       "contact_phone": "410-810-8405"
-    }
+    },
+    
+    {
+      "name": "Kent Museum",
+      "lat": 39.35226773843539,
+      "lng": -75.98555066932533,
+      "address": "Turner Creek Park, 13689 Turners Creek Rd, Kennedyville, MD 21645",
+      "hours": "1st and 3rd Saturdays, May-October, 10am-2pm",
+      "contact_email": "thendrickson51@yahoo.com",
+      "website": ""
+    },
+    {
+        "name": "African American Schoolhouse",
+        "lat": 39.300225498946894,
+        "lng": -76.14655207549062,
+        "address": "11730 St. James Newtown Rd., Worton, MD 21678",
+        "hours": "1st Saturdays May-September 10:00am-2:00pm, or by appointment",
+        "contact_email": "museumsofkent@gmail.com"
+      }
   ]
   

@@ -1,4 +1,4 @@
-const map = L.map('map').setView([39.303537581994675, -75.80184465895468], 13);
+const map = L.map('map').setView([39.224308372070155, -76.06278080179688], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '© OpenStreetMap contributors'
@@ -36,6 +36,8 @@ async function initializeApp() {
     console.error("Error initializing app:", error);
   }
 }
+
+
 
 // Populate dropdown options for start and end locations
 function populateDropdowns() {
@@ -112,7 +114,7 @@ getDirectionsBtn.addEventListener('click', () => {
   calculateRoute();
 });
 
-// Helper function to calculate the distance between two points (Haversine formula)
+// Helper function to calculate the Haversine distance between two points
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3; // Earth radius in meters
     const phi1 = lat1 * (Math.PI / 180);
@@ -133,7 +135,24 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     routeLayer.clearLayers();
     visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>"; // Clear visit sequence
   
-    const coordinates = [startCoords, ...museumsData.map(m => [m.lng, m.lat]), endCoords];
+    // Calculate distances from current location to each museum and sort by proximity
+    const currentLocation = { lat: startCoords[1], lng: startCoords[0] };
+    const museumsByProximity = museumsData.map(museum => {
+      const distance = calculateDistance(currentLocation.lat, currentLocation.lng, museum.lat, museum.lng);
+      return { ...museum, distance };
+    }).sort((a, b) => a.distance - b.distance);
+  
+    console.log("Museums sorted by real proximity:", museumsByProximity);
+  
+    // Update visit sequence sidebar with the correct order based on real-world proximity
+    museumsByProximity.forEach((museum, index) => {
+      const listItem = document.createElement('li');
+      listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Distance: ${(museum.distance / 1000).toFixed(2)} km<br>Hours: ${museum.hours || 'Not available'}`;
+      visitSequenceContainer.querySelector("ul").appendChild(listItem);
+    });
+  
+    // Update coordinates for OSRM route calculation
+    const coordinates = [startCoords, ...museumsByProximity.map(m => [m.lng, m.lat]), endCoords];
     const coordsString = coordinates.map(c => c.join(",")).join(";");
   
     console.log("Calculating route with coordinates:", coordinates);
@@ -149,11 +168,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         L.geoJSON(route).addTo(routeLayer);
   
         console.log("OSRM Route Data:", data);
-        console.log("OSRM Waypoints:", data.waypoints);
   
-        // Display the visit sequence in the correct order
-        const visitOrder = [];
-  
+        // Process waypoints and update markers based on OSRM optimal order
         data.waypoints.forEach((waypoint, index) => {
           console.log(`Processing waypoint ${index}:`, waypoint);
   
@@ -162,55 +178,45 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
             return;
           }
   
-          // Find the closest museum to the current waypoint based on distance
-          let closestMuseum = null;
-          let closestDistance = Infinity;
-  
-          museumsData.forEach(museum => {
-            const distance = calculateDistance(
-              museum.lat, museum.lng,
-              waypoint.location[1], waypoint.location[0]
-            );
-  
-            if (distance < closestDistance && distance < 100) { // Use a 100-meter threshold
-              closestMuseum = museum;
-              closestDistance = distance;
-            }
-          });
-  
-          if (closestMuseum) {
-            visitOrder.push(closestMuseum);
-  
-            // Add route markers with correct numbering in visit order
-            L.marker([closestMuseum.lat, closestMuseum.lng], {
+          // Match waypoint to the closest museum in sorted order
+          const museum = museumsByProximity[index - 1]; // Adjust index since waypoints include start and end
+          if (museum) {
+            L.marker([museum.lat, museum.lng], {
               icon: L.divIcon({
                 className: 'museum-marker',
-                html: `${visitOrder.length}`, // Show the correct visit order number
+                html: `${index}`, // Order based on the route sequence
                 iconSize: [28, 28]
               })
-            }).bindTooltip(closestMuseum.name, { permanent: true, direction: 'top', className: 'museum-label' }).addTo(routeLayer);
+            }).bindTooltip(museum.name, { permanent: true, direction: 'top', className: 'museum-label' }).addTo(routeLayer);
   
-            console.log(`Added museum to route: ${closestMuseum.name} (Distance: ${closestDistance.toFixed(2)} meters)`);
-          } else {
-            console.error("No matching museum found within range for waypoint:", waypoint);
+            console.log(`Added museum to route: ${museum.name} (Distance: ${(museum.distance / 1000).toFixed(2)} km)`);
           }
         });
   
-        // Populate visit sequence sidebar
-        visitOrder.forEach((museum, index) => {
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Hours: ${museum.hours || 'Not available'}`;
-          visitSequenceContainer.querySelector("ul").appendChild(listItem);
-        });
-  
-        visitSequenceContainer.innerHTML += "</ul>"; // Close the list
+        // Display detailed directions
         const directions = data.routes[0].legs.flatMap(leg => leg.steps.map(step => `<li>${step.maneuver.instruction}</li>`)).join("");
         document.getElementById('directions').innerHTML = `<ul>${directions}</ul>`;
       })
       .catch(error => console.error("Error fetching route:", error));
-  }
+  }  
   
-  
-
 // Start the application
 initializeApp();
+
+// Function to display the welcome modal
+function showWelcomeModal() {
+    const welcomeModal = document.getElementById('welcomeModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+  
+    // Display the modal
+    welcomeModal.style.display = 'flex';
+  
+    // Close the modal when "Get Started" button is clicked
+    closeModalBtn.addEventListener('click', () => {
+      welcomeModal.style.display = 'none';
+    });
+  }
+  
+  // Show the welcome modal when the page loads
+  window.addEventListener('load', showWelcomeModal);
+  

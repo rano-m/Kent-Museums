@@ -8,11 +8,25 @@
   top: 10px;
   right: 10px;
   width: 250px;
+  max-height: 80vh; /* Limit the height to 80% of the viewport height */
+  overflow-y: auto; /* Enable vertical scrolling if content exceeds height */
   background-color: white;
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   z-index: 1000;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 600px) {
+  #sidebar {
+    width: 90%; /* Expand to fit most of the screen width on small screens */
+    right: 5%; /* Center it by using left and right margins */
+    left: 5%;
+    top: 20px;
+    max-height: 70vh; /* Adjust height to be a bit smaller on small screens */
+    overflow-y: auto;
+  }
 }
 
 #sidebar h3 {
@@ -81,4 +95,26 @@
 /* Tooltip Adjustments */
 .museum-label {
   transform: translateY(-25px); /* Position tooltip higher above the marker */
+}
+
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  text-align: center;
 }
