@@ -1,0 +1,86 @@
+[
+    {
+      "name": "Massey Air Museum",
+      "lat": 39.303537581994675,
+      "lng": -75.80184465895468,
+      "address": "33541 Maryland Line Rd, Massey, MD 21650",
+      "hours": "10:00am-4:00pm except Mondays and Thursdays; also open by appointment",
+      "contact_email": "email@masseyaero.org",
+      "contact_phone": "410-928-5270",
+      "website": "http://www.masseyaero.org"
+    },
+    {
+      "name": "Kent Museum",
+      "lat": 39.35226773843539,
+      "lng": -75.98555066932533,
+      "address": "Turner Creek Park, 13689 Turners Creek Rd, Kennedyville, MD 21645",
+      "hours": "1st and 3rd Saturdays, May-October, 10am-2pm",
+      "contact_email": "thendrickson51@yahoo.com",
+      "website": ""
+    },
+    {
+      "name": "Betterton Heritage Museum",
+      "lat": 39.36922073244553,
+      "lng": -76.06261362178417,
+      "address": "100 Main Street, Betterton, MD 21610",
+      "hours": "Saturdays and Sundays May-September 1:30pm-3:00pm or by appointment",
+      "contact_phone": "410-348-5120",
+      "website": "http://www.bettertonheritage.org"
+    },
+    {
+      "name": "African American Schoolhouse",
+      "lat": 39.300225498946894,
+      "lng": -76.14655207549062,
+      "address": "11730 St. James Newtown Rd., Worton, MD 21678",
+      "hours": "1st Saturdays May-September 10:00am-2:00pm, or by appointment",
+      "contact_email": "museumsofkent@gmail.com"
+    },
+    {
+      "name": "Bordley History Center Historical Society of Kent County",
+      "lat": 39.209060552164374,
+      "lng": -76.06690417246499,
+      "address": "Library Thursday and Friday 10:00am-2:00pm or by appointment.",
+      "hours": "Museum and Shop open Thursday-Friday 11:00am-2:00pm, Saturday 10:00am-1:00pm, First Fridays until 7:00pm",
+      "contact_phone": "410-778-3499",
+      "website": "http://www.kentcountyhistory.org"
+    },
+    {
+      "name": "Sumner Hall",
+      "lat": 39.20748175041556,
+      "lng": -76.0664780450657,
+      "address": "206 S Queen St, Chestertown, MD 21620",
+      "hours": "Saturdays 10:00am-1:00pm or by appointment",
+      "contact_email": "info@sumnerhall.org",
+      "contact_phone": "443-282-0023",
+      "website": "http://www.sumnerhall.org"
+    },
+    {
+      "name": "Waterman's Museum",
+      "lat": 39.140258668303304,
+      "lng": -76.24954189111924,
+      "address": "20880 Rock Hall Ave, Rock Hall, MD 21661",
+      "hours": "If not open, key is available at the Haven Harbour Marina office daily 10am-4pm",
+      "contact_email": "email@havenharbour.com",
+      "contact_phone": "410-778-6697",
+      "website": "http://www.havenharbour.com/watermans-museum"
+    },
+    {
+      "name": "Eastern Neck National Wildlife Refuge Visitor Contact Station",
+      "lat": 39.02186755853807,
+      "lng": -76.22985102900125,
+      "address": "1730 Eastern Neck Island Road, Rock Hall 21661",
+      "hours": "Friday through Saturday 11:00am-3:00pm year-round. Closed on hunt days and federal holidays",
+      "contact_phone": "410-639-7056",
+      "website": "http://www.FriendsofEasternNeck.org"
+    },
+    {
+      "name": "MuSe Community Museum",
+      "lat": 39.2081365,
+      "lng": -76.06781375,
+      "address": "210 S Cross St, Chestertown, MD 21620",
+      "hours": "Saturdays from 9 am to 12 pm, and First Fridays",
+      "contact_email": "lchamberlin2@washcoll.edu",
+      "contact_phone": "410-810-8405"
+    }
+  ]
+  

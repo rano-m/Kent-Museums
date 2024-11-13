@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Museum Route Planner with OSM</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <link rel="stylesheet" href="style.css" /> <!-- Link to external CSS file -->
+</head>
+<body>
+  <div id="map"></div>
+  <div id="directions"></div>
+
+<!-- Sidebar for start/end location and actions -->
+<div id="sidebar">
+    <h3>Route Planner</h3>
+  
+    <label for="startLocationDropdown">Select Start Location</label>
+    <select id="startLocationDropdown">
+      <option value="current">Current Location</option>
+      <!-- Museum options will be populated here dynamically -->
+    </select>
+  
+    <label for="endLocationDropdown">Select End Location</label>
+    <select id="endLocationDropdown">
+      <option value="start">Same as Start Location</option>
+      <!-- Museum options will be populated here dynamically -->
+    </select>
+  
+    <button id="getDirectionsBtn">Get Directions</button>
+    <button id="printMapIcon"><span>🖨️ Print Map</span></button>
+  </div>
+  
+
+
+  <!-- Welcome Modal -->
+  <div id="welcomeModal" class="modal">
+    <div class="modal-content">
+      <h2>Welcome to the Kent Museums Route Planner!</h2>
+      <p>This application helps you plan an optimal route to visit all the museums in Kent County. You can view museum details, including hours and contact information, and calculate the best route from your selected start location to each museum.</p>
+      <button id="closeModalBtn">Get Started</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="script.js"></script> <!-- Link to external JavaScript file -->
+</body>
+</html>
