@@ -130,7 +130,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c; // Distance in meters
   }
   
-  function calculateRoute() {
+  // Define `visitOrder` globally if needed for other functions
+let visitOrder = [];
+
+function calculateRoute() {
     // Clear only the route layer without touching the initial markers
     routeLayer.clearLayers();
     visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>"; // Clear visit sequence
@@ -142,8 +145,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
       return { ...museum, distance };
     }).sort((a, b) => a.distance - b.distance);
   
-    console.log("Museums sorted by real proximity:", museumsByProximity);
-  
     // Update visit sequence sidebar with the correct order based on real-world proximity
     museumsByProximity.forEach((museum, index) => {
       const listItem = document.createElement('li');
@@ -151,12 +152,12 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
       visitSequenceContainer.querySelector("ul").appendChild(listItem);
     });
   
+    // Store sorted museums in `visitOrder` for later use with Google Maps
+    visitOrder = museumsByProximity;
+  
     // Update coordinates for OSRM route calculation
     const coordinates = [startCoords, ...museumsByProximity.map(m => [m.lng, m.lat]), endCoords];
     const coordsString = coordinates.map(c => c.join(",")).join(";");
-  
-    console.log("Calculating route with coordinates:", coordinates);
-    console.log("Coordinates string for OSRM:", coordsString);
   
     fetch(`https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`)
       .then(response => {
@@ -167,38 +168,17 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         const route = data.routes[0].geometry;
         L.geoJSON(route).addTo(routeLayer);
   
-        console.log("OSRM Route Data:", data);
-  
-        // Process waypoints and update markers based on OSRM optimal order
-        data.waypoints.forEach((waypoint, index) => {
-          console.log(`Processing waypoint ${index}:`, waypoint);
-  
-          // Skip start and end waypoints
-          if (index === 0 || index === data.waypoints.length - 1) {
-            return;
-          }
-  
-          // Match waypoint to the closest museum in sorted order
-          const museum = museumsByProximity[index - 1]; // Adjust index since waypoints include start and end
-          if (museum) {
-            L.marker([museum.lat, museum.lng], {
-              icon: L.divIcon({
-                className: 'museum-marker',
-                html: `${index}`, // Order based on the route sequence
-                iconSize: [28, 28]
-              })
-            }).bindTooltip(museum.name, { permanent: true, direction: 'top', className: 'museum-label' }).addTo(routeLayer);
-  
-            console.log(`Added museum to route: ${museum.name} (Distance: ${(museum.distance / 1000).toFixed(2)} km)`);
-          }
-        });
-  
         // Display detailed directions
         const directions = data.routes[0].legs.flatMap(leg => leg.steps.map(step => `<li>${step.maneuver.instruction}</li>`)).join("");
         document.getElementById('directions').innerHTML = `<ul>${directions}</ul>`;
+  
+        // Show the "Start the Route" button after route calculation is successful
+        startRouteButton.style.display = 'block';
       })
       .catch(error => console.error("Error fetching route:", error));
-  }  
+  }
+  
+
   
 // Start the application
 initializeApp();
@@ -220,3 +200,29 @@ function showWelcomeModal() {
   // Show the welcome modal when the page loads
   window.addEventListener('load', showWelcomeModal);
   
+// Function to generate the Google Maps URL and open it
+function openInGoogleMaps() {
+    // Define start, end, and waypoints using coordinates
+    const start = `${startCoords[1]},${startCoords[0]}`;
+    const end = `${endCoords[1]},${endCoords[0]}`;
+    
+    // Construct waypoints based on the optimized visit order
+    const waypoints = visitOrder.map(museum => `${museum.lat},${museum.lng}`).join('|');
+    
+    // Create the Google Maps directions URL
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${end}&waypoints=${waypoints}&travelmode=driving`;
+  
+    // Open the generated URL in a new tab or Google Maps app (on mobile)
+    window.open(googleMapsUrl, '_blank');
+  }
+  
+// Create the "Start the Route" button and add it to the sidebar
+const startRouteButton = document.createElement('button');
+startRouteButton.innerText = 'Start the Route';
+startRouteButton.classList.add('start-route-btn');
+startRouteButton.style.marginTop = '10px'; // Add some margin for spacing
+startRouteButton.style.display = 'none'; // Hide button initially
+startRouteButton.addEventListener('click', openInGoogleMaps);
+
+// Append the button to the sidebar, above the Visit Sequence container
+document.getElementById('sidebar').insertBefore(startRouteButton, visitSequenceContainer);

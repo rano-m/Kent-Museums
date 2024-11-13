@@ -67,6 +67,21 @@
   background-color: #005b8a;
 }
 
+#sidebar button.start-route-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+#sidebar button.start-route-btn:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+
 /* Museum Marker Styling */
 .museum-marker {
   background-color: #0079c1;
