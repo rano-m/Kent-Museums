@@ -226,14 +226,13 @@ function displayRouteOnMap(orderedMuseums) {
     .catch(error => console.error("Error fetching route geometry:", error));
 }
 
-// Function to open Google Maps with the route
 function openInGoogleMaps() {
-    const start = `${startCoords[1]},${startCoords[0]}`;
-    const end = `${endCoords[1]},${endCoords[0]}`;
-    const waypoints = visitOrder.slice(1, -1).map(museum => `${museum.lat},${museum.lng}`).join('|');
+  const start = `${startCoords[1]},${startCoords[0]}`;
+  const end = `${endCoords[1]},${endCoords[0]}`;
+  const waypoints = visitOrder.map(museum => `${museum.lat},${museum.lng}`).join('|');
 
-    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${end}&waypoints=${waypoints}&travelmode=driving`;
-    window.open(googleMapsUrl, '_blank');
+  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${end}&waypoints=${waypoints}&travelmode=driving`;
+  window.open(googleMapsUrl, '_blank');
 }
 
 
