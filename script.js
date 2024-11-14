@@ -8,6 +8,7 @@ let museumsData = [];
 let startCoords = null;
 let endCoords = null;
 let routeLayer = L.layerGroup().addTo(map); // Separate layer for route markers
+let visitOrder =[];
 
 const startLocationDropdown = document.getElementById('startLocationDropdown');
 const endLocationDropdown = document.getElementById('endLocationDropdown');
@@ -53,13 +54,13 @@ function populateDropdowns() {
   });
 }
 
-// Create markers on the map for each museum
+// Create markers on the map for each museum without numbering
 function createMarkers() {
-  museumsData.forEach((museum, index) => {
+  museumsData.forEach((museum) => {
     L.marker([museum.lat, museum.lng], {
       icon: L.divIcon({
         className: 'museum-marker',
-        html: `${index + 1}`,
+        html: '', // No numbering here
         iconSize: [28, 28],
         className: 'museum-marker'
       })
@@ -68,6 +69,7 @@ function createMarkers() {
       .bindTooltip(museum.name, { permanent: false, direction: 'top', className: 'museum-label' });
   });
 }
+
 
 // Set default location based on current location or fallback to first museum
 function setDefaultLocation() {
@@ -101,7 +103,188 @@ function setCoordsFromDropdown(dropdown, coordsSetter) {
   }
 }
 
-// Get directions button handler
+
+async function calculateOptimalRoute() {
+  // Ensure start and end locations are set
+  setCoordsFromDropdown(startLocationDropdown, coords => startCoords = coords);
+  setCoordsFromDropdown(endLocationDropdown, coords => endCoords = coords);
+  if (!startCoords || !endCoords) {
+    alert("Please select valid start and end locations.");
+    return;
+  }
+
+  // Create a new array for route calculation that includes start and end points
+  const routeMuseums = [
+    { lat: startCoords[1], lng: startCoords[0], name: "Start" },
+    ...museumsData,
+    { lat: endCoords[1], lng: endCoords[0], name: "End" }
+  ];
+
+  // Prepare the coordinates string for OSRM Table API
+  const coordinates = routeMuseums.map(loc => `${loc.lng},${loc.lat}`).join(';');
+  const osrmUrl = `https://router.project-osrm.org/table/v1/driving/${coordinates}?annotations=distance`;
+
+  try {
+    const response = await fetch(osrmUrl);
+    const data = await response.json();
+
+    if (data.code !== "Ok" || !data.distances) {
+      console.error("Failed to fetch route data or received invalid data:", data);
+      return;
+    }
+
+    // Solve for optimal route order including start (0) and end (last)
+    const optimalOrder = solveTSP(data.distances);
+    const orderedMuseums = optimalOrder.map(index => routeMuseums[index]);
+
+    // Remove start and end from visitOrder for display purposes but keep them in the route for visualization
+    visitOrder = orderedMuseums.slice(1, -1); // Exclude start and end from display
+
+    displayRouteOnMap(orderedMuseums);
+    startRouteButton.style.display = 'block'; // Show the "Start the Route" button
+  } catch (error) {
+    console.error("Error in calculateOptimalRoute:", error);
+  }
+}
+
+// Display the route on the map with start and end markers included
+function displayRouteOnMap(orderedMuseums) {
+  routeLayer.clearLayers();
+  visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>";
+
+  // Prepare the coordinates string for the OSRM Route API with start and end points
+  const routeCoordinates = orderedMuseums.map(museum => `${museum.lng},${museum.lat}`).join(';');
+  const osrmRouteUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordinates}?overview=full&geometries=geojson`;
+
+  // Fetch the route geometry from OSRM
+  fetch(osrmRouteUrl)
+    .then(response => response.json())
+    .then(routeData => {
+      if (routeData.code !== "Ok") {
+        console.error("Failed to fetch route geometry:", routeData);
+        return;
+      }
+
+      const routeGeometry = routeData.routes[0].geometry;
+      L.geoJSON(routeGeometry).addTo(routeLayer); // Display route on map
+
+      orderedMuseums.forEach((museum, index) => {
+        L.marker([museum.lat, museum.lng], {
+          icon: L.divIcon({
+            className: 'museum-marker',
+            html: `${index + 1}`,
+            iconSize: [28, 28]
+          })
+        }).bindTooltip(museum.name, { permanent: true, direction: 'top' }).addTo(routeLayer);
+
+        if (museum.name !== "Start" && museum.name !== "End") {
+          const listItem = document.createElement('li');
+          listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${museum.address || 'Not available'}<br>Hours: ${museum.hours || 'Not available'}`;
+          visitSequenceContainer.querySelector("ul").appendChild(listItem);
+        }
+      });
+    })
+    .catch(error => console.error("Error fetching route geometry:", error));
+}
+
+
+// Display the route on the map and set up Google Maps link
+function displayRouteOnMap(orderedMuseums) {
+  routeLayer.clearLayers();
+  visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>";
+
+  // Prepare the coordinates string for the OSRM Route API
+  const routeCoordinates = orderedMuseums.map(museum => `${museum.lng},${museum.lat}`).join(';');
+  const osrmRouteUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordinates}?overview=full&geometries=geojson`;
+
+  // Fetch the route geometry from OSRM
+  fetch(osrmRouteUrl)
+    .then(response => response.json())
+    .then(routeData => {
+        if (routeData.code !== "Ok") {
+            console.error("Failed to fetch route geometry:", routeData);
+            return;
+        }
+
+        const routeGeometry = routeData.routes[0].geometry;
+        L.geoJSON(routeGeometry).addTo(routeLayer); // Display route on map
+
+        orderedMuseums.forEach((museum, index) => {
+            L.marker([museum.lat, museum.lng], {
+                icon: L.divIcon({
+                    className: 'museum-marker',
+                    html: `${index + 1}`,
+                    iconSize: [28, 28]
+                })
+            }).bindTooltip(museum.name, { permanent: true, direction: 'top' }).addTo(routeLayer);
+
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${museum.address}<br>Hours: ${museum.hours || 'Not available'}`;
+            visitSequenceContainer.querySelector("ul").appendChild(listItem);
+        });
+    })
+    .catch(error => console.error("Error fetching route geometry:", error));
+}
+
+// Function to open Google Maps with the route
+function openInGoogleMaps() {
+    const start = `${startCoords[1]},${startCoords[0]}`;
+    const end = `${endCoords[1]},${endCoords[0]}`;
+    const waypoints = visitOrder.slice(1, -1).map(museum => `${museum.lat},${museum.lng}`).join('|');
+
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${end}&waypoints=${waypoints}&travelmode=driving`;
+    window.open(googleMapsUrl, '_blank');
+}
+
+
+// Simple TSP Solver (nearest neighbor approach)
+function solveTSP(distances) {
+  const n = distances.length;
+  const visited = new Array(n).fill(false);
+  const route = [0];
+  visited[0] = true;
+
+  for (let i = 1; i < n; i++) {
+      let last = route[route.length - 1];
+      let nearest = -1;
+      let minDistance = Infinity;
+
+      for (let j = 0; j < n; j++) {
+          if (!visited[j] && distances[last][j] < minDistance) {
+              nearest = j;
+              minDistance = distances[last][j];
+          }
+      }
+
+      route.push(nearest);
+      visited[nearest] = true;
+  }
+
+  return route;
+}
+
+// Display the route on the map
+// function displayRouteOnMap(orderedMuseums) {
+//   routeLayer.clearLayers();
+//   visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>";
+
+//   orderedMuseums.forEach((museum, index) => {
+//       L.marker([museum.lat, museum.lng], {
+//           icon: L.divIcon({
+//               className: 'museum-marker',
+//               html: `${index + 1}`,
+//               iconSize: [28, 28]
+//           })
+//       }).bindTooltip(museum.name, { permanent: true, direction: 'top' }).addTo(routeLayer);
+
+//       const listItem = document.createElement('li');
+//       listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${museum.address}<br>Hours: ${museum.hours || 'Not available'}`;
+//       visitSequenceContainer.querySelector("ul").appendChild(listItem);
+//   });
+// }
+
+
+// Initialize and call calculateRoute when directions button is clicked
 getDirectionsBtn.addEventListener('click', () => {
   setCoordsFromDropdown(startLocationDropdown, coords => startCoords = coords);
   setCoordsFromDropdown(endLocationDropdown, coords => endCoords = coords);
@@ -111,73 +294,9 @@ getDirectionsBtn.addEventListener('click', () => {
     return;
   }
 
-  calculateRoute();
+  calculateOptimalRoute();
 });
 
-// Helper function to calculate the Haversine distance between two points
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // Earth radius in meters
-    const phi1 = lat1 * (Math.PI / 180);
-    const phi2 = lat2 * (Math.PI / 180);
-    const deltaPhi = (lat2 - lat1) * (Math.PI / 180);
-    const deltaLambda = (lon2 - lon1) * (Math.PI / 180);
-  
-    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-              Math.cos(phi1) * Math.cos(phi2) *
-              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  
-    return R * c; // Distance in meters
-  }
-  
-  // Define `visitOrder` globally if needed for other functions
-let visitOrder = [];
-
-function calculateRoute() {
-    // Clear only the route layer without touching the initial markers
-    routeLayer.clearLayers();
-    visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>"; // Clear visit sequence
-  
-    // Calculate distances from current location to each museum and sort by proximity
-    const currentLocation = { lat: startCoords[1], lng: startCoords[0] };
-    const museumsByProximity = museumsData.map(museum => {
-      const distance = calculateDistance(currentLocation.lat, currentLocation.lng, museum.lat, museum.lng);
-      return { ...museum, distance };
-    }).sort((a, b) => a.distance - b.distance);
-  
-    // Update visit sequence sidebar with the correct order based on real-world proximity
-    museumsByProximity.forEach((museum, index) => {
-      const listItem = document.createElement('li');
-      listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Distance: ${(museum.distance / 1000).toFixed(2)} km<br>Hours: ${museum.hours || 'Not available'}`;
-      visitSequenceContainer.querySelector("ul").appendChild(listItem);
-    });
-  
-    // Store sorted museums in `visitOrder` for later use with Google Maps
-    visitOrder = museumsByProximity;
-  
-    // Update coordinates for OSRM route calculation
-    const coordinates = [startCoords, ...museumsByProximity.map(m => [m.lng, m.lat]), endCoords];
-    const coordsString = coordinates.map(c => c.join(",")).join(";");
-  
-    fetch(`https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`)
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to fetch route");
-        return response.json();
-      })
-      .then(data => {
-        const route = data.routes[0].geometry;
-        L.geoJSON(route).addTo(routeLayer);
-  
-        // Display detailed directions
-        const directions = data.routes[0].legs.flatMap(leg => leg.steps.map(step => `<li>${step.maneuver.instruction}</li>`)).join("");
-        document.getElementById('directions').innerHTML = `<ul>${directions}</ul>`;
-  
-        // Show the "Start the Route" button after route calculation is successful
-        startRouteButton.style.display = 'block';
-      })
-      .catch(error => console.error("Error fetching route:", error));
-  }
-  
 
   
 // Start the application
