@@ -83,16 +83,61 @@
 }
 
 /* Museum Marker Styling */
-.museum-marker {
-  background-color: #0079c1;
-  color: white;
-  border-radius: 50%;
-  font-weight: bold;
+/* Initial Blue Pinpoint Marker */
+/* Initial Blue Pinpoint Marker with Hollow Center */
+/* Initial Blue Pinpoint Marker */
+.museum-blue-pin {
+  background-color: #0079c1; /* Blue color */
+  border: 2px solid #005b8a; /* Darker blue border */
+  width: 20px; /* Smaller size for pin */
+  height: 20px;
+  border-radius: 30%; /* Slightly rounded, not a full circle */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Subtle shadow for better visibility */
+}
+
+/* Numbered Marker with Black Outline */
+.museum-numbered {
+  background-color: white; /* White background */
+  color: #0079c1; /* Blue text */
+  border: 2px solid black; /* Black outline */
+  font-size: 14px; /* Slightly larger text */
+  font-weight: bold; /* Bold numbers */
   text-align: center;
-  line-height: 28px;
+  line-height: 28px; /* Center the text vertically */
   width: 28px;
   height: 28px;
+  border-radius: 50%; /* Fully circular */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
 }
+
+/* Tooltip Adjustments */
+.museum-label {
+  transform: translateY(-30px); /* Position tooltip higher above the marker */
+  font-size: 12px; /* Smaller font size */
+  font-weight: bold; /* Bold labels */
+  color: black; /* Black text for readability */
+  background: white; /* White background for tooltip */
+  padding: 4px 6px; /* Add padding for readability */
+  border-radius: 4px; /* Slight rounding */
+  border: 1px solid #ccc; /* Light gray border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+  white-space: nowrap; /* Prevent overlapping text */
+}
+
+/* Tooltip Arrow */
+.museum-label::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #ccc; /* Matches tooltip border */
+}
+
 
 /* Print Icon Styling */
 #printMapIcon {
@@ -107,10 +152,6 @@
   justify-content: center;
 }
 
-/* Tooltip Adjustments */
-.museum-label {
-  transform: translateY(-25px); /* Position tooltip higher above the marker */
-}
 
 .modal {
   display: none; /* Hidden by default */

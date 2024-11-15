@@ -54,21 +54,25 @@ function populateDropdowns() {
   });
 }
 
-// Create markers on the map for each museum without numbering
 function createMarkers() {
   museumsData.forEach((museum) => {
-    L.marker([museum.lat, museum.lng], {
-      icon: L.divIcon({
-        className: 'museum-marker',
-        html: '', // No numbering here
-        iconSize: [28, 28],
-        className: 'museum-marker'
-      })
-    }).addTo(map)
+    const marker = L.divIcon({
+      className: 'museum-blue-pin',
+      iconSize: [20, 28],
+      iconAnchor: [10, 28], // Anchor at the point of the pin
+    });
+
+    L.marker([museum.lat, museum.lng], { icon: marker })
+      .addTo(map)
       .bindPopup(`<b>${museum.name}</b><br>${museum.address}`)
-      .bindTooltip(museum.name, { permanent: false, direction: 'top', className: 'museum-label' });
+      .bindTooltip(museum.name, {
+        permanent: false,
+        direction: 'top',
+        className: 'museum-label',
+      });
   });
 }
+
 
 
 // Set default location based on current location or fallback to first museum
@@ -158,7 +162,6 @@ function displayRouteOnMap(orderedMuseums) {
   routeLayer.clearLayers();
   visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>";
 
-  // Prepare the coordinates string for the OSRM Route API
   const routeCoordinates = orderedMuseums.map(museum => `${museum.lng},${museum.lat}`).join(';');
   const osrmRouteUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordinates}?overview=full&geometries=geojson`;
 
@@ -171,25 +174,25 @@ function displayRouteOnMap(orderedMuseums) {
       }
 
       const routeGeometry = routeData.routes[0].geometry;
-      L.geoJSON(routeGeometry).addTo(routeLayer); // Display the route on the map
+      L.geoJSON(routeGeometry).addTo(routeLayer); // Display route
 
-      // Add markers for intermediate nodes only
+      // Add numbered markers
       const visitSequence = orderedMuseums.filter(
         museum => museum.name !== "Start" && museum.name !== "End"
       );
 
       visitSequence.forEach((museum, index) => {
-        L.marker([museum.lat, museum.lng], {
-          icon: L.divIcon({
-            className: 'museum-marker',
-            html: `${index + 1}`, // Assign numbers only to intermediate nodes
-            iconSize: [28, 28],
-          })
-        })
+        const numberedIcon = L.divIcon({
+          className: 'museum-numbered',
+          html: `${index + 1}`, // Numbered circles
+          iconSize: [28, 28],
+        });
+
+        L.marker([museum.lat, museum.lng], { icon: numberedIcon })
           .bindTooltip(museum.name, { permanent: true, direction: 'top' })
           .addTo(routeLayer);
 
-        // Add intermediate nodes to the sidebar
+        // Add to sidebar
         const listItem = document.createElement('li');
         listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${
           museum.address || 'Not available'
@@ -199,6 +202,7 @@ function displayRouteOnMap(orderedMuseums) {
     })
     .catch(error => console.error("Error fetching route geometry:", error));
 }
+
 
 
 
