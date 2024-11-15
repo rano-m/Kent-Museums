@@ -1,4 +1,4 @@
-const map = L.map('map').setView([39.224308372070155, -76.06278080179688], 13);
+const map = L.map('map').setView([39.224308372070155, -76.06278080179688], 11);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '© OpenStreetMap contributors'
@@ -54,22 +54,48 @@ function populateDropdowns() {
   });
 }
 
+let initialLayer = L.layerGroup().addTo(map); // Separate layer for initial markers
+
 function createMarkers() {
   museumsData.forEach((museum) => {
-    const marker = L.divIcon({
-      className: 'museum-blue-pin',
-      iconSize: [20, 28],
-      iconAnchor: [10, 28], // Anchor at the point of the pin
+    const customCircleIcon = L.divIcon({
+      html: '<i class="fa fa-university museum-circle-marker"></i>',
+      className: '',
+      iconSize: [28, 28],
+      iconAnchor: [14, 6],
     });
 
-    L.marker([museum.lat, museum.lng], { icon: marker })
-      .addTo(map)
-      .bindPopup(`<b>${museum.name}</b><br>${museum.address}`)
+    const marker = L.marker([museum.lat, museum.lng], { icon: customCircleIcon })
+      .addTo(initialLayer) // Add to the initial layer
+      .bindPopup(`
+        <b>${museum.name}</b><br>
+        <strong>Address:</strong> ${museum.address}<br>
+        <strong>Hours:</strong> ${museum.hours || 'Not available'}<br>
+        <strong>Email:</strong> <a href="mailto:${museum.contact_email}">${museum.contact_email}</a><br>
+        <strong>Phone:</strong> <a href="tel:${museum.contact_phone}">${museum.contact_phone}</a><br>
+        <strong>Website:</strong> <a href="${museum.website}" target="_blank">${museum.website}</a>
+      `)
       .bindTooltip(museum.name, {
-        permanent: false,
+        permanent: true,
         direction: 'top',
         className: 'museum-label',
       });
+
+    // Hide label when pop-up opens
+    marker.on('popupopen', (e) => {
+      const tooltip = e.target.getTooltip();
+      if (tooltip) {
+        tooltip._container.style.display = 'none';
+      }
+    });
+
+    // Show label when pop-up closes
+    marker.on('popupclose', (e) => {
+      const tooltip = e.target.getTooltip();
+      if (tooltip) {
+        tooltip._container.style.display = '';
+      }
+    });
   });
 }
 
@@ -159,50 +185,58 @@ async function calculateOptimalRoute() {
 
 
 function displayRouteOnMap(orderedMuseums) {
+  initialLayer.clearLayers(); // Remove initial markers
   routeLayer.clearLayers();
   visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>";
 
-  const routeCoordinates = orderedMuseums.map(museum => `${museum.lng},${museum.lat}`).join(';');
+  const routeCoordinates = orderedMuseums.map((museum) => `${museum.lng},${museum.lat}`).join(';');
   const osrmRouteUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordinates}?overview=full&geometries=geojson`;
 
   fetch(osrmRouteUrl)
-    .then(response => response.json())
-    .then(routeData => {
+    .then((response) => response.json())
+    .then((routeData) => {
       if (routeData.code !== "Ok") {
         console.error("Failed to fetch route geometry:", routeData);
         return;
       }
 
       const routeGeometry = routeData.routes[0].geometry;
-      L.geoJSON(routeGeometry).addTo(routeLayer); // Display route
+      L.geoJSON(routeGeometry).addTo(routeLayer);
 
-      // Add numbered markers
-      const visitSequence = orderedMuseums.filter(
-        museum => museum.name !== "Start" && museum.name !== "End"
-      );
+      orderedMuseums
+        .filter((museum) => museum.name !== "Start" && museum.name !== "End")
+        .forEach((museum, index) => {
+          const numberedIcon = L.divIcon({
+            className: 'museum-numbered',
+            html: `${index + 1}`,
+            iconSize: [28, 28],
+          });
 
-      visitSequence.forEach((museum, index) => {
-        const numberedIcon = L.divIcon({
-          className: 'museum-numbered',
-          html: `${index + 1}`, // Numbered circles
-          iconSize: [28, 28],
+          L.marker([museum.lat, museum.lng], { icon: numberedIcon })
+            .bindTooltip(museum.name, {
+              permanent: true,
+              direction: 'top',
+              className: 'museum-label',
+              offset: [0, -10],
+            })
+            .bindPopup(`
+              <b>${museum.name}</b><br>
+              <strong>Address:</strong> ${museum.address || 'Not available'}<br>
+              <strong>Hours:</strong> ${museum.hours || 'Not available'}<br>
+              <strong>Email:</strong> <a href="mailto:${museum.contact_email}">${museum.contact_email}</a><br>
+              <strong>Phone:</strong> <a href="tel:${museum.contact_phone}">${museum.contact_phone}</a><br>
+              <strong>Website:</strong> <a href="${museum.website}" target="_blank">${museum.website}</a>
+            `)
+            .addTo(routeLayer);
+
+          // Add to sidebar
+          const listItem = document.createElement('li');
+          listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${museum.address || 'Not available'}<br>Hours: ${museum.hours || 'Not available'}`;
+          visitSequenceContainer.querySelector("ul").appendChild(listItem);
         });
-
-        L.marker([museum.lat, museum.lng], { icon: numberedIcon })
-          .bindTooltip(museum.name, { permanent: true, direction: 'top' })
-          .addTo(routeLayer);
-
-        // Add to sidebar
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${
-          museum.address || 'Not available'
-        }<br>Hours: ${museum.hours || 'Not available'}`;
-        visitSequenceContainer.querySelector("ul").appendChild(listItem);
-      });
     })
-    .catch(error => console.error("Error fetching route geometry:", error));
+    .catch((error) => console.error("Error fetching route geometry:", error));
 }
-
 
 
 
@@ -329,6 +363,23 @@ sidebarToggle.addEventListener('click', () => {
     console.log("Sidebar toggle clicked. Open class:", sidebar.classList.contains('open'));
   
     // Toggle button icon
-    sidebarToggle.innerHTML = sidebar.classList.contains('open') ? '✖' : '☰';
+    sidebarToggle.innerHTML = sidebar.classList.contains('open') ? '☰' : '✖';
   });
   
+function printMap() {
+  // Get references to the map and sidebar
+  const mapElement = document.getElementById('map');
+  const sidebarElement = document.getElementById('sidebar');
+
+  // Temporarily hide the sidebar
+  sidebarElement.style.display = 'none';
+
+  // Trigger the print dialog for the map view
+  window.print();
+
+  // Restore the sidebar after printing
+  sidebarElement.style.display = '';
+}
+
+// Add event listener to the Print Map button
+document.getElementById('printMapIcon').addEventListener('click', printMap);

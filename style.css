@@ -83,23 +83,31 @@
 }
 
 /* Museum Marker Styling */
-/* Initial Blue Pinpoint Marker */
-/* Initial Blue Pinpoint Marker with Hollow Center */
-/* Initial Blue Pinpoint Marker */
-.museum-blue-pin {
-  background-color: #0079c1; /* Blue color */
-  border: 2px solid #005b8a; /* Darker blue border */
-  width: 20px; /* Smaller size for pin */
-  height: 20px;
-  border-radius: 30%; /* Slightly rounded, not a full circle */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Subtle shadow for better visibility */
+/* Custom Pinpoint Icon with Blue Outline */
+/* Custom Pinpoint Icon with Blue Outline */
+/* Navy Blue Map Marker */
+/* Initial Circle Marker with Museum Icon */
+.museum-circle-marker {
+  background-color: white; /* Circle background color */
+  color: #0079c1; /* Museum icon color */
+  border: 2px solid rgb(137, 158, 163); 
+  font-size: 16px; /* Icon size */
+  text-align: center;
+  line-height: 28px; /* Center the icon vertically */
+  width: 28px;
+  height: 28px;
+  border-radius: 50%; /* Make it circular */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Numbered Marker with Black Outline */
 .museum-numbered {
   background-color: white; /* White background */
   color: #0079c1; /* Blue text */
-  border: 2px solid black; /* Black outline */
+  border: 2px solid rgb(137, 158, 163); 
   font-size: 14px; /* Slightly larger text */
   font-weight: bold; /* Bold numbers */
   text-align: center;
