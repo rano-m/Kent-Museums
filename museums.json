@@ -64,16 +64,6 @@
   },
   {
     "id": 7,
-    "name": "MuSe Community Museum",
-    "lat": 39.2081365,
-    "lng": -76.06781375,
-    "address": "210 S Cross St, Chestertown, MD 21620",
-    "hours": "Saturdays from 9 am to 12 pm, and First Fridays",
-    "contact_email": "lchamberlin2@washcoll.edu",
-    "contact_phone": "410-810-8405"
-  },
-  {
-    "id": 8,
     "name": "Kent Museum",
     "lat": 39.35226773843539,
     "lng": -75.98555066932533,
@@ -83,7 +73,7 @@
     "website": ""
   },
   {
-    "id": 9,
+    "id": 8,
     "name": "African American Schoolhouse",
     "lat": 39.300225498946894,
     "lng": -76.14655207549062,
