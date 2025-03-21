@@ -10,6 +10,9 @@ let endCoords = null;
 let routeLayer = L.layerGroup().addTo(map); // Separate layer for route markers
 let visitOrder =[];
 
+// Add excluded museums set
+let excludedMuseums = new Set();
+
 const startLocationDropdown = document.getElementById('startLocationDropdown');
 const endLocationDropdown = document.getElementById('endLocationDropdown');
 const getDirectionsBtn = document.getElementById('getDirectionsBtn');
@@ -185,9 +188,11 @@ async function calculateOptimalRoute() {
 
 
 function displayRouteOnMap(orderedMuseums) {
-  initialLayer.clearLayers(); // Remove initial markers
+  initialLayer.clearLayers();
   routeLayer.clearLayers();
-  visitSequenceContainer.innerHTML = "<h4>Visit Sequence</h4><ul>";
+  
+  const visitSequenceContainer = document.getElementById('visitSequence');
+  visitSequenceContainer.innerHTML = "<ul></ul>";
 
   const routeCoordinates = orderedMuseums.map((museum) => `${museum.lng},${museum.lat}`).join(';');
   const osrmRouteUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordinates}?overview=full&geometries=geojson`;
@@ -212,7 +217,7 @@ function displayRouteOnMap(orderedMuseums) {
             iconSize: [28, 28],
           });
 
-          L.marker([museum.lat, museum.lng], { icon: numberedIcon })
+          const marker = L.marker([museum.lat, museum.lng], { icon: numberedIcon })
             .bindTooltip(museum.name, {
               permanent: true,
               direction: 'top',
@@ -220,18 +225,81 @@ function displayRouteOnMap(orderedMuseums) {
               offset: [0, -10],
             })
             .bindPopup(`
-              <b>${museum.name}</b><br>
-              <strong>Address:</strong> ${museum.address || 'Not available'}<br>
-              <strong>Hours:</strong> ${museum.hours || 'Not available'}<br>
-              <strong>Email:</strong> <a href="mailto:${museum.contact_email}">${museum.contact_email}</a><br>
-              <strong>Phone:</strong> <a href="tel:${museum.contact_phone}">${museum.contact_phone}</a><br>
-              <strong>Website:</strong> <a href="${museum.website}" target="_blank">${museum.website}</a>
+              <div class="museum-popup">
+                <b>${museum.name}</b><br>
+                <strong>Address:</strong> ${museum.address || 'Not available'}<br>
+                <strong>Hours:</strong> ${museum.hours || 'Not available'}<br>
+                <strong>Email:</strong> <a href="mailto:${museum.contact_email}">${museum.contact_email}</a><br>
+                <strong>Phone:</strong> <a href="tel:${museum.contact_phone}">${museum.contact_phone}</a><br>
+                <strong>Website:</strong> <a href="${museum.website}" target="_blank">${museum.website}</a>
+              </div>
             `)
             .addTo(routeLayer);
 
-          // Add to sidebar
           const listItem = document.createElement('li');
-          listItem.innerHTML = `<b>${index + 1}. ${museum.name}</b><br>Address: ${museum.address || 'Not available'}<br>Hours: ${museum.hours || 'Not available'}`;
+          listItem.className = 'visit-item';
+          
+          const content = document.createElement('div');
+          content.className = 'visit-content';
+          
+          const actions = document.createElement('div');
+          actions.className = 'visit-actions';
+          
+          const excludeBtn = document.createElement('button');
+          excludeBtn.className = 'exclude-btn';
+          excludeBtn.innerHTML = '✕';
+          excludeBtn.title = 'Remove from route';
+          
+          const museumIndex = museumsData.findIndex(m => m.name === museum.name);
+          excludeBtn.onclick = () => {
+            excludedMuseums.add(museumIndex);
+            recalculateRoute();
+          };
+
+          // Format hours for better readability
+          const formatHours = (hours) => {
+            if (!hours) return 'Hours not available';
+            return hours.split(',').map(h => h.trim()).join('<br>');
+          };
+
+          content.innerHTML = `
+            <div class="visit-number">${index + 1}</div>
+            <div class="visit-details">
+              <strong>${museum.name}</strong>
+              <div class="visit-info">
+                <div class="visit-info-item">
+                  <i class="fa fa-map-marker"></i>
+                  <span>${museum.address || 'Address not available'}</span>
+                </div>
+                <div class="visit-info-item">
+                  <i class="fa fa-clock-o"></i>
+                  <span>${formatHours(museum.hours)}</span>
+                </div>
+                ${museum.contact_phone ? `
+                <div class="visit-info-item">
+                  <i class="fa fa-phone"></i>
+                  <a href="tel:${museum.contact_phone}">${museum.contact_phone}</a>
+                </div>
+                ` : ''}
+                ${museum.contact_email ? `
+                <div class="visit-info-item">
+                  <i class="fa fa-envelope"></i>
+                  <a href="mailto:${museum.contact_email}">${museum.contact_email}</a>
+                </div>
+                ` : ''}
+                ${museum.website ? `
+                <div class="visit-info-item">
+                  <i class="fa fa-globe"></i>
+                  <a href="${museum.website}" target="_blank">Visit Website</a>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+
+          actions.appendChild(excludeBtn);
+          listItem.appendChild(content);
+          listItem.appendChild(actions);
           visitSequenceContainer.querySelector("ul").appendChild(listItem);
         });
     })
@@ -244,38 +312,67 @@ function displayRouteOnMap(orderedMuseums) {
 
 function solveTSPWithFixedEnds(distances) {
   const n = distances.length;
-
-  // Start is fixed at index 0 and end is fixed at index n-1
-  const visited = new Array(n).fill(false);
-  visited[0] = true; // Start node
-  visited[n - 1] = true; // End node
-
-  const route = [0]; // Start with the first node
-
-  // Solve for intermediate nodes
-  let currentNode = 0;
-  for (let step = 1; step < n - 1; step++) {
-    let nearest = -1;
-    let minDistance = Infinity;
-
-    for (let i = 1; i < n - 1; i++) { // Exclude start and end
-      if (!visited[i] && distances[currentNode][i] < minDistance) {
-        nearest = i;
-        minDistance = distances[currentNode][i];
+  
+  // Initialize DP arrays
+  // dp[mask][last] represents shortest path visiting vertices in mask and ending at last
+  const dp = Array(1 << n).fill().map(() => Array(n).fill(Infinity));
+  const parent = Array(1 << n).fill().map(() => Array(n).fill(-1));
+  
+  // Base case: start from node 0
+  dp[1][0] = 0;  // 1 represents only node 0 visited
+  
+  // Try all possible sets of vertices
+  for (let mask = 1; mask < (1 << n); mask++) {
+    // Skip if start node (0) is not in mask
+    if (!(mask & 1)) continue;
+    
+    // Skip if end node (n-1) is in mask but it's not the complete tour
+    if ((mask & (1 << (n-1))) && mask !== ((1 << n) - 1)) continue;
+    
+    // For each possible last node in current path
+    for (let last = 0; last < n; last++) {
+      // Skip if last node is not in mask
+      if (!(mask & (1 << last))) continue;
+      
+      // Try to add one more node to path
+      const prevMask = mask ^ (1 << last);  // Remove last node from mask
+      if (prevMask === 0) continue;  // Skip if no previous nodes
+      
+      // Try all possible previous nodes
+      for (let prev = 0; prev < n; prev++) {
+        if (!(prevMask & (1 << prev))) continue;  // Skip if prev not in prevMask
+        
+        // Calculate new distance
+        const newDist = dp[prevMask][prev] + distances[prev][last];
+        if (newDist < dp[mask][last]) {
+          dp[mask][last] = newDist;
+          parent[mask][last] = prev;
+        }
       }
     }
-
-    if (nearest !== -1) {
-      route.push(nearest);
-      visited[nearest] = true;
-      currentNode = nearest;
-    }
   }
-
-  // Add the end node to complete the route
-  route.push(n - 1);
-
-  return route; // Return the optimal order
+  
+  // Find optimal path ending at n-1
+  const finalMask = (1 << n) - 1;  // All nodes visited
+  if (dp[finalMask][n-1] === Infinity) {
+    console.error("No valid tour found");
+    return [0, ...Array.from({length: n-2}, (_, i) => i+1), n-1];  // Return simple path as fallback
+  }
+  
+  // Reconstruct path
+  const path = [];
+  let currentMask = finalMask;
+  let currentNode = n-1;
+  
+  while (currentNode !== -1) {
+    path.unshift(currentNode);
+    const nextNode = parent[currentMask][currentNode];
+    if (nextNode === -1) break;
+    currentMask ^= (1 << currentNode);
+    currentNode = nextNode;
+  }
+  
+  return path;
 }
 
 
@@ -383,3 +480,105 @@ function printMap() {
 
 // Add event listener to the Print Map button
 document.getElementById('printMapIcon').addEventListener('click', printMap);
+
+async function recalculateRoute() {
+  // Filter out excluded museums
+  const activeMuseums = museumsData.filter((_, index) => !excludedMuseums.has(index));
+
+  // Create new route array with active museums
+  const routeMuseums = [
+    { lat: startCoords[1], lng: startCoords[0], name: "Start" },
+    ...activeMuseums,
+    { lat: endCoords[1], lng: endCoords[0], name: "End" }
+  ];
+
+  // Prepare the coordinates string for OSRM Table API
+  const coordinates = routeMuseums.map(loc => `${loc.lng},${loc.lat}`).join(';');
+  const osrmUrl = `https://router.project-osrm.org/table/v1/driving/${coordinates}?annotations=distance`;
+
+  try {
+    const response = await fetch(osrmUrl);
+    const data = await response.json();
+
+    if (data.code !== "Ok" || !data.distances) {
+      console.error("Failed to fetch route data or received invalid data:", data);
+      return;
+    }
+
+    const optimalOrder = solveTSPWithFixedEnds(data.distances);
+    const orderedMuseums = optimalOrder.map(index => routeMuseums[index]);
+    visitOrder = orderedMuseums.slice(1, -1);
+    displayRouteOnMap(orderedMuseums);
+    startRouteButton.style.display = "block";
+  } catch (error) {
+    console.error("Error in recalculateRoute:", error);
+  }
+}
+
+function resetRoute() {
+  excludedMuseums.clear();
+  recalculateRoute();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // ... existing code ...
+
+  // Add reset route button listener
+  document.getElementById('reset-route').addEventListener('click', resetRoute);
+
+  initializeMobileBottomSheet();
+});
+
+// Add touch handling for mobile bottom sheet
+function initializeMobileBottomSheet() {
+  const sidebar = document.getElementById('sidebar');
+  let startY = 0;
+  let startTransform = 0;
+  let isDragging = false;
+
+  function handleTouchStart(e) {
+    const touch = e.touches[0];
+    startY = touch.clientY;
+    startTransform = sidebar.getBoundingClientRect().top;
+    isDragging = true;
+  }
+
+  function handleTouchMove(e) {
+    if (!isDragging) return;
+    
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - startY;
+    const newTop = Math.min(0, Math.max(-window.innerHeight * 0.6, startTransform - deltaY));
+    
+    sidebar.style.transform = `translateY(${-newTop}px)`;
+    e.preventDefault();
+  }
+
+  function handleTouchEnd() {
+    if (!isDragging) return;
+    
+    const currentTop = sidebar.getBoundingClientRect().top;
+    const threshold = window.innerHeight * 0.3;
+    
+    if (currentTop > threshold) {
+      sidebar.style.transform = 'translateY(calc(100% - 60px))';
+      sidebar.classList.remove('open');
+    } else {
+      sidebar.style.transform = 'translateY(0)';
+      sidebar.classList.add('open');
+    }
+    
+    isDragging = false;
+  }
+
+  sidebar.addEventListener('touchstart', handleTouchStart);
+  sidebar.addEventListener('touchmove', handleTouchMove);
+  sidebar.addEventListener('touchend', handleTouchEnd);
+
+  // Handle the drag handle click
+  sidebar.addEventListener('click', (e) => {
+    if (e.target === sidebar || e.target.closest('.visit-sequence-header')) {
+      sidebar.classList.toggle('open');
+    }
+  });
+}
